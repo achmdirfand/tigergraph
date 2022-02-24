@@ -1,4 +1,4 @@
-CREATE QUERY FootPrintDetection(DATETIME start_date=to_datetime("2020-01-01 00:00:00"), DATETIME end_date=to_datetime("2020-01-01 00:00:00"), int k) FOR GRAPH peruri { 
+CREATE QUERY FootPrintDetection(DATETIME start_date=to_datetime("2020-01-01 00:00:00"), DATETIME end_date=to_datetime("2020-01-01 00:00:00"), int k) FOR GRAPH MyGraph { 
 
   
 #### algoritma ini mendeteksi id pengguna yang memanggil banyak layanan dalam waktu singkat untuk menemukan kerentanannya
