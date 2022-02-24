@@ -1,0 +1,43 @@
+CREATE QUERY FootPrintDetection(DATETIME start_date=to_datetime("2020-01-01 00:00:00"), DATETIME end_date=to_datetime("2020-01-01 00:00:00"), int k) FOR GRAPH peruri { 
+
+  
+#### algoritma ini mendeteksi id pengguna yang memanggil banyak layanan dalam waktu singkat untuk menemukan kerentanannya
+  
+TypeDef tuple<float rata2request, float sdeviasi, vertex host, vertex service, int jmlhrequest> hasil_tuple;
+	AvgAccum @rata2;
+	SumAccum<float> @sdev;
+	MapAccum<vertex, SumAccum<FLOAT>> @jmlhreq;
+	ListAccum<hasil_tuple> @@kesimpulan;
+  MaxAccum<FLOAT> @@hacker;
+  
+  
+  warga = {User.*};
+  
+  mulai = SELECT t1 FROM warga:s1-(Initiate:e)-Event:t1
+          WHERE t1.Created_On BETWEEN start_date AND end_date
+          ACCUM t1.@jmlhreq += (warga->1.00);
+  
+  req     = SELECT t2 FROM mulai:s2-(Request:e2)-Service:t2
+            ACCUM t2.@jmlhreq += s2.@jmlhreq
+            POST-ACCUM 
+              CASE WHEN t2.@jmlhreq.size() > 1 THEN
+                FOREACH (host, jmlh) in t2.@jmlhreq DO 
+                 t2.@rata2 += jmlh
+                END,
+                FOREACH (host, jmlh) in t2.@jmlhreq DO
+                 t2.@sdev += pow(jmlh - t2.@rata2, 2)
+                END,
+                t2.@sdev = sqrt(t2.@sdev/(t2.@jmlhreq.size()-1)),
+                CASE WHEN t2.@sdev > 0.00001 THEN
+                FOREACH (host, jmlh) in t2.@jmlhreq DO
+                CASE WHEN jmlh-t2.@rata2 > k*t2.@sdev THEN
+                  @@kesimpulan += hasil_tuple(t2.@rata2, t2.@sdev, host, t2, jmlh)
+                END
+              END
+            END
+          END
+  ;
+  
+
+  PRINT @@kesimpulan,req; 
+}

@@ -1,0 +1,47 @@
+CREATE QUERY floodingDetection(int k) FOR GRAPH peruri { 
+ #### algoritma ini mendeteksi layanan dengan sejumlah besar permintaan.
+  
+  
+  TypeDef tuple<float rata2request, float sdeviasi, vertex layanan, int totalrequest> hasil_tuple;
+	AvgAccum @rata2;
+	SumAccum<float> @sdev;
+	MapAccum<vertex, SumAccum<FLOAT>> @jmlhreq;
+	ListAccum<hasil_tuple> @@kesimpulan;
+  SumAccum<INT> @treq;
+  
+  
+  warga = {User.*};
+  
+  mulai = SELECT t1 FROM warga:s1-(Initiate:e)-Event:t1
+          ACCUM t1.@jmlhreq += (warga->1.00);
+  
+  req     = SELECT t2 FROM mulai:s2-(Request:e2)-Service:t2
+            ACCUM t2.@jmlhreq += s2.@jmlhreq
+            POST-ACCUM 
+              CASE WHEN t2.@jmlhreq.size() > 1 THEN
+              FOREACH (host, jmlh) in t2.@jmlhreq DO
+              t2.@treq += jmlh
+              END,
+              CASE WHEN t2.@jmlhreq.size() > 1 THEN
+                FOREACH (host, jmlh) in t2.@jmlhreq DO 
+                 t2.@rata2 += jmlh
+                END,
+                FOREACH (host, jmlh) in t2.@jmlhreq DO
+                 t2.@sdev += pow(jmlh - t2.@rata2, 2)
+                END,
+               
+                t2.@sdev = sqrt(t2.@sdev/(t2.@jmlhreq.size()-1)),
+                CASE WHEN t2.@sdev > 0.00001 THEN
+                FOREACH (host, jmlh) in t2.@jmlhreq DO
+                CASE WHEN jmlh-t2.@rata2 > k*t2.@sdev THEN
+                  @@kesimpulan += hasil_tuple(t2.@rata2, t2.@sdev, t2, t2.@treq)
+                END
+              END
+            END
+          END
+          END
+  ;
+  
+
+  PRINT req, @@kesimpulan; 
+}

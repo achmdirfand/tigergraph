@@ -1,0 +1,65 @@
+CREATE QUERY next_sequence(VERTEX<User> Id,datetime created_on = to_datetime("2020-01-15 00:00:00"),DATETIME end_date = to_datetime("2020-01-15 00:00:00")) FOR GRAPH peruri{ 
+  
+  
+  TYPEDEF TUPLE <req_id STRING, req_ts DATETIME> tpl_req;
+  HeapAccum<tpl_req>(1000, req_id ASC, req_ts ASC) @sortedReq;
+  SetAccum<EDGE> @@network;
+  SetAccum<STRING> @first_req;
+  DATETIME prev_ts, curr_ts;
+  
+  start = {Id};
+  all_event = SELECT r FROM start:i -(Initiate:e)- Event:r;
+  seq_req_drop = 
+    SELECT r
+    FROM all_event:r -(next_seq:e)-> Event:r2
+    
+    ACCUM
+      DELETE(e);
+  
+  all_req =
+    SELECT r
+    FROM start:i -(Initiate:e)- Event:r
+    WHERE Event.Created_On between created_on AND end_date
+    ACCUM
+      i.@sortedReq += tpl_req(r.id, r.Created_On)
+    POST-ACCUM
+      STRING prev_req = "",
+      STRING curr_req = "",
+      WHILE i.@sortedReq.size() > 0 DO
+        IF prev_req == "" THEN
+          prev_req = i.@sortedReq.top().req_id,
+          prev_ts = i.@sortedReq.top().req_ts,
+          i.@first_req += prev_req
+        ELSE
+          curr_req = i.@sortedReq.top().req_id,
+          curr_ts = i.@sortedReq.top().req_ts,
+          INSERT INTO next_seq(FROM, TO) VALUES(prev_req Event, curr_req Event),
+          prev_req = curr_req,
+          prev_ts = curr_ts
+        END,
+        i.@sortedReq.pop()
+      END;
+  
+  first_req = 
+    SELECT r
+    FROM start:i -(Initiate:e)- Event:r
+    WHERE r.id IN i.@first_req
+    ACCUM
+      @@network += e;
+  
+    serv = SELECT r 
+        from all_req-(Request:e)-Service:r
+         ACCUM @@network += e;
+      result = SELECT t 
+        From serv -(Generate_Code:e)-Result:t
+        ACCUM @@network += e;
+ req_rel =
+   SELECT r
+    FROM all_req:r -(next_seq:e)-> Event:r_next
+    
+    ACCUM
+      @@network += e;
+  
+  PRINT start, req_rel[req_rel.Created_On], @@network;
+  PRINT result;
+}
