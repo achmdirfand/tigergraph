@@ -1,0 +1,20 @@
+CREATE QUERY error_tracking(VERTEX<User> id,datetime created_on = to_datetime("2020-01-01 11:10:00"),DATETIME end_date = to_datetime("2020-01-15 00:00:00")) FOR GRAPH peruri { 
+  ListAccum <EDGE> @path;
+  Start={id};
+  users = SELECT t from Start:s -(Initiate:e)-Event:t
+          WHERE Event.Created_On > created_on and Event.Created_On < end_date
+          ACCUM Event.@path += e;
+          
+  event = SELECT t FROM users:s - (Request:e)-Service:t
+          ACCUM Service.@path += users.@path, Service.@path += e;
+            
+  result= SELECT t From  event:s - (Generate_Code:e)-Result:t 
+          ACCUM Result.@path += event.@path, Result.@path += e;
+            
+  
+  #res_desc = SELECT t FROM result:s -(Result_desc:e)-Error:t
+    #        ACCUM Error.@path += result.@path, Error.@path += e;
+            
+  
+  PRINT result[result.@path]; 
+}
