@@ -1,4 +1,4 @@
 # tigergraph
 
-##this is algorithm for cybersecurity use-case 
+## this is algorithm for cybersecurity use-case 
 
