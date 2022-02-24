@@ -1,4 +1,4 @@
-CREATE QUERY error_tracking(VERTEX<User> id,datetime created_on = to_datetime("2020-01-01 11:10:00"),DATETIME end_date = to_datetime("2020-01-15 00:00:00")) FOR GRAPH peruri { 
+CREATE QUERY error_tracking(VERTEX<User> id,datetime created_on = to_datetime("2020-01-01 11:10:00"),DATETIME end_date = to_datetime("2020-01-15 00:00:00")) FOR GRAPH MyGraph { 
   ListAccum <EDGE> @path;
   Start={id};
   users = SELECT t from Start:s -(Initiate:e)-Event:t
