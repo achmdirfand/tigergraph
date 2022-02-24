@@ -1,4 +1,4 @@
-CREATE QUERY floodingDetection(int k) FOR GRAPH peruri { 
+CREATE QUERY floodingDetection(int k) FOR GRAPH mygraph { 
  #### algoritma ini mendeteksi layanan dengan sejumlah besar permintaan.
   
   
