@@ -1,4 +1,4 @@
-CREATE QUERY next_sequence(VERTEX<User> Id,datetime created_on = to_datetime("2020-01-15 00:00:00"),DATETIME end_date = to_datetime("2020-01-15 00:00:00")) FOR GRAPH peruri{ 
+CREATE QUERY next_sequence(VERTEX<User> Id,datetime created_on = to_datetime("2020-01-15 00:00:00"),DATETIME end_date = to_datetime("2020-01-15 00:00:00")) FOR GRAPH mygraph{ 
   
   
   TYPEDEF TUPLE <req_id STRING, req_ts DATETIME> tpl_req;
